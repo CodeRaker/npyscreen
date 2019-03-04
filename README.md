@@ -1,0 +1,2 @@
+# npyscreen
+Training with npyscreen
