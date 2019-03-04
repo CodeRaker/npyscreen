@@ -1,52 +1,94 @@
-import npyscreen
-import datetime
-import threading
-from time import sleep
+#https://github.com/windsorschmidt/pynapple/blob/master/pynapple.py
 
-class BroController(npyscreen.NPSAppManaged):
-    """The controller makes sure to run forms. MAIN will be the first that runs"""
-    def onStart(self):
-        #npyscreen.setTheme(npyscreen.Themes.ColorfulTheme)
-        self.registerForm("MAIN", MainForm())
+import sys,os
+import curses
 
-class MainForm(npyscreen.SplitForm):
-    def create(self):
-        self.name = "BroIRC"
-        self.OK_BUTTON_TEXT = "Send"
-        #self.new_menu(name="test") # must be npyscreen.FormWithMenus
-        #self.chat = self.add(npyscreen.TitleText, name="Chat Widget")
-        for i in range(1,18):
-            exec('self.l'+str(i)+' = self.add(npyscreen.FixedText, value = "line '+str(i)+'")')
-        #self.nextrely += 1 #increase space for the next element position
-        self.draw_line_at = 20 # the position the line split should be drawn at
-        self.nextrely = 21
-        self.chatMessage = self.add(npyscreen.Textfield, value = "Enter here...")
-        self.display()
-        self.chatMessage.edit()
-        #thread_time = threading.Thread(target=self.update_time,args=())
-        #thread_time.daemon = True
-        #thread_time.start()
+def draw_menu(stdscr):
+    k = 0
+    cursor_x = 0
+    cursor_y = 0
 
-    # def update_time(self):
-    #     counter = 0
-    #     while True:
-    #        counter += 1
-    #        exec('self.l'+str(counter)+'.value = "changed'+str(counter)+'"')
-    #        self.display()
-    #        sleep(1)
+    # Clear and refresh the screen for a blank canvas
+    stdscr.clear()
+    stdscr.refresh()
 
-    def afterEditing(self):
-        self.chatMessage.value = ""
-        self.display()
-        self.chatMessage.edit()
-        #self.parentApp.setNextForm("MAIN")
+    # Start colors in curses
+    curses.start_color()
+    curses.init_pair(1, curses.COLOR_CYAN, curses.COLOR_BLACK)
+    curses.init_pair(2, curses.COLOR_RED, curses.COLOR_BLACK)
+    curses.init_pair(3, curses.COLOR_BLACK, curses.COLOR_WHITE)
 
-    #def resize(self):
-    #    print("just happened a resize")
+    # Loop where k is the last character pressed
+    while (k != ord('q')):
 
-    def set_value(self):
-        return "Tom"
+        # Initialization
+        stdscr.clear()
+        height, width = stdscr.getmaxyx()
+
+        if k == curses.KEY_DOWN:
+            cursor_y = cursor_y + 1
+        elif k == curses.KEY_UP:
+            cursor_y = cursor_y - 1
+        elif k == curses.KEY_RIGHT:
+            cursor_x = cursor_x + 1
+        elif k == curses.KEY_LEFT:
+            cursor_x = cursor_x - 1
+
+        cursor_x = max(0, cursor_x)
+        cursor_x = min(width-1, cursor_x)
+
+        cursor_y = max(0, cursor_y)
+        cursor_y = min(height-1, cursor_y)
+
+        # Declaration of strings
+        title = "Curses example"[:width-1]
+        subtitle = "Written by Clay McLeod"[:width-1]
+        keystr = "Last key pressed: {}".format(k)[:width-1]
+        statusbarstr = "Press 'q' to exit | STATUS BAR | Pos: {}, {}".format(cursor_x, cursor_y)
+        if k == 0:
+            keystr = "No key press detected..."[:width-1]
+
+        # Centering calculations
+        start_x_title = int((width // 2) - (len(title) // 2) - len(title) % 2)
+        start_x_subtitle = int((width // 2) - (len(subtitle) // 2) - len(subtitle) % 2)
+        start_x_keystr = int((width // 2) - (len(keystr) // 2) - len(keystr) % 2)
+        start_y = int((height // 2) - 2)
+
+        # Rendering some text
+        whstr = "Width: {}, Height: {}".format(width, height)
+        stdscr.addstr(0, 0, whstr, curses.color_pair(1))
+
+        # Render status bar
+        stdscr.attron(curses.color_pair(3))
+        stdscr.addstr(height-1, 0, statusbarstr)
+        stdscr.addstr(height-1, len(statusbarstr), " " * (width - len(statusbarstr) - 1))
+        stdscr.attroff(curses.color_pair(3))
+
+        # Turning on attributes for title
+        stdscr.attron(curses.color_pair(2))
+        stdscr.attron(curses.A_BOLD)
+
+        # Rendering title
+        stdscr.addstr(start_y, start_x_title, title)
+
+        # Turning off attributes for title
+        stdscr.attroff(curses.color_pair(2))
+        stdscr.attroff(curses.A_BOLD)
+
+        # Print rest of text
+        stdscr.addstr(start_y + 1, start_x_subtitle, subtitle)
+        stdscr.addstr(start_y + 3, (width // 2) - 2, '-' * 4)
+        stdscr.addstr(start_y + 5, start_x_keystr, keystr)
+        stdscr.move(cursor_y, cursor_x)
+
+        # Refresh the screen
+        stdscr.refresh()
+
+        # Wait for next input
+        k = stdscr.getch()
+
+def main():
+    curses.wrapper(draw_menu)
 
 if __name__ == "__main__":
-    App = BroController()
-    App.run()
+    main()
